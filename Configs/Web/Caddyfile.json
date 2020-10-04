@@ -1,0 +1,65 @@
+{
+  "admin": {
+    "disabled": true
+  },
+  "apps": {
+    "http": {
+      "http_port": 8080,
+      "https_port": 8443,
+      "servers": {
+        "kristianjones.dev": {
+          "listen": [
+            ":8080"
+          ],
+          "automatic_https": {
+            "disable": true
+          },
+          "routes": [
+            {
+              "match": [
+                {
+                  "host": [
+                    "azure1.kristianjones.dev"
+                  ],
+                  "path": [
+                    "/healthcheck"
+                  ]
+                }
+              ],
+              "handle": [
+                {
+                  "handler": "static_response",
+                  "status_code": "200",
+                  "body": "Azure1 OK",
+                  "close": true
+                }
+              ]
+            },
+            {
+              "match": [
+                {
+                  "host": [
+                    "{env.VM1_IP}",
+                    "{env.VM2_IP}",
+                    "{env.VM3_IP}"
+                  ],
+                  "path": [
+                    "/healthcheck"
+                  ]
+                }
+              ],
+              "handle": [
+                {
+                  "handler": "static_response",
+                  "status_code": "200",
+                  "body": "OK",
+                  "close": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

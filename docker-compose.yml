@@ -1,0 +1,233 @@
+version: '3.8'
+
+networks:
+  #
+  # Public Network
+  #
+  publicWeb:
+
+  minecraftNetwork:
+
+  #
+  # Prometheus Internal Network
+  #
+  prometheusNetwork:
+  
+  #
+  # Minio intercommunication network
+  #
+  internalMinio:
+
+configs:
+  #
+  # Public Reverse Proxy Caddyfile
+  #
+  WebConfig:
+    name: Caddyfile-9
+    file: ./Configs/Web/Caddyfile.json
+
+  #
+  # Minio Reverse Proxy Caddyfile
+  #
+  MinioWebConfig:
+    name: MinioWebConfig-1
+    file: ./Configs/MinioWeb/Caddyfile.json
+
+  #
+  # Prometheus Configuration File
+  #
+  PrometheusConfig:
+    name: PrometheusConfig-1
+    file: ./Configs/Prometheus/prometheus.yml
+
+volumes:
+  minio1Data:
+    name: minio1Data
+    external: true
+
+  minio2Data:
+    name: minio2Data
+    external: true
+
+  minio3Data:
+    name: minio3Data
+    external: true
+
+  minio4Data:
+    name: minio4Data
+    external: true
+
+  prometheusData:
+    name: prometheusdata
+    external: true
+
+services:
+  #
+  # Reverse Proxy Handling all Web Traffic
+  #
+  Web:
+    image: kristianfoss/programs-caddy:caddy-main-scratch
+    command: ['run', '--config', '/etc/caddy/Caddyfile.json']
+    configs:
+      - source: WebConfig
+        target: /etc/caddy/Caddyfile.json
+    deploy:
+      replicas: 6
+    env_file: ENVs/Web.env
+    networks:
+      - publicWeb
+    ports:
+      - target: 8080
+        published: 80
+        protocol: tcp
+        mode: ingress
+      - target: 4843
+        published: 443
+        protocol: tcp
+        mode: ingress
+      - target: 8443
+        published: 443
+        protocol: udp
+        mode: ingress
+  #
+  # Database
+  #
+
+  #
+  # Minecraft
+  #
+  #
+  # minecraft:
+  #   image: itzg/minecraft-server
+  #   restart: unless-stopped
+  #   volumes:
+  #     - minecraftData:/data
+  #   ports:
+  #     - 25565:25565/tcp
+  #     - 25565:25565/udp
+  #   environment:
+  #     VERSION: latest
+  #     EULA: 'TRUE'
+  #     OVERRIDE_SERVER_PROPERTIES: 'true'
+  #     OPS: KristianFJones
+  #     ENABLE_QUERY: 'true'
+  #     SPAWN_PROTECTION: '0'
+  #     DIFFICULTY: hard
+  #     USE_AIKAR_FLAGS: 'true'
+  #     MOTD: '1.16.2 MC Server'
+  #   labels:
+  #     com.ouroboros.enable: 'true'
+
+  #
+  # Prometheus Monitoring System
+  #
+  Prometheus:
+    image: kristianfoss/programs-prometheus:prometheus-server-main-scratch
+    command:
+      [
+        '--storage.tsdb.path=/data',
+        '--config.file=/etc/prometheus/prometheus.yml',
+      ]
+    configs:
+      - source: PrometheusConfig
+        target: /etc/prometheus/prometheus.yml
+        uid: '1000'
+        gid: '1000'
+        mode: 0440
+    volumes:
+      - prometheusData:/data
+    networks:
+      - publicWeb
+      - prometheusNetwork
+
+  #
+  # Minio 
+  #
+  # Shared storage between Nodes
+  #
+
+
+  MinioWeb:
+    image: kristianfoss/programs-caddy:caddy-main-scratch
+    command: ['run', '--config', '/etc/caddy/Caddyfile.json']
+    configs:
+      - source: MinioWebConfig
+        target: /etc/caddy/Caddyfile.json
+        uid: '1000'
+        gid: '1000'
+        mode: 0440
+    deploy:
+      mode: replicated
+      replicas: 6
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    networks:
+      - internalMinio
+    ports:
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: ingress
+
+  Minio1:
+    image: kristianfoss/programs-minio:minio-build-main-scratch
+    command: ['server', 'http://Minio{1...4}/export']
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: dnsrr
+      placement:
+        constraints:
+          - "node.hostname==vm1"
+    env_file: ENVs/Minio.env
+    volumes:
+      - minio1Data:/export
+    networks:
+      - internalMinio
+
+  Minio2:
+    image: kristianfoss/programs-minio:minio-build-main-scratch
+    command: ['server', 'http://Minio{1...4}/export']
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: dnsrr
+      placement:
+        constraints:
+          - "node.hostname==vm2"
+    env_file: ENVs/Minio.env
+    volumes:
+      - minio2Data:/export
+    networks:
+      - internalMinio
+
+  Minio3:
+    image: kristianfoss/programs-minio:minio-build-main-scratch
+    command: ['server', 'http://Minio{1...4}/export']
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: dnsrr
+      placement:
+        constraints:
+          - "node.hostname==vm3"
+    env_file: ENVs/Minio.env
+    volumes:
+      - minio3Data:/export
+    networks:
+      - internalMinio
+
+  Minio4:
+    image: kristianfoss/programs-minio:minio-build-main-scratch
+    command: ['server', 'http://Minio{1...4}/export']
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: dnsrr
+    env_file: ENVs/Minio.env
+    volumes:
+      - minio4Data:/export
+    networks:
+      - internalMinio
