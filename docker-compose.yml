@@ -23,7 +23,7 @@ configs:
   # Public Reverse Proxy Caddyfile
   #
   WebConfig:
-    name: Caddyfile-9
+    name: Caddyfile-13
     file: ./Configs/Web/Caddyfile.json
 
   #
@@ -37,8 +37,30 @@ configs:
   # Prometheus Configuration File
   #
   PrometheusConfig:
-    name: PrometheusConfig-1
+    name: PrometheusConfig-3
     file: ./Configs/Prometheus/prometheus.yml
+  
+  GrafanaConfig:
+    name: GrafanaConfig-5
+    file: ./Configs/Prometheus/Grafana/grafana.ini
+
+  GrafanaDatasources:
+    name: GrafanaDatasources-2
+    file: ./Configs/Prometheus/Grafana/datasource.yml
+
+  GrafanaDashboardConfig:
+    name: GrafanaDashboardConfig-1
+    file: ./Configs/Prometheus/Grafana/dashboard.yml
+
+  GrafanaKNetCADashboard:
+    name: GrafanaKNetCADashboard-1
+    file: ./Configs/Prometheus/Grafana/dashboards/Domains/knetca.json
+
+  SSLExporterConfig:
+    name: SSLExporterConfig-1
+    file: ./Configs/Prometheus/SSLExporter/SSLExporter.yml
+
+
 
 volumes:
   minio1Data:
@@ -59,6 +81,13 @@ volumes:
 
   prometheusData:
     name: prometheusdata
+    external: true
+
+  #
+  # Grafana Dashboard
+  #
+  grafanaData:
+    name: grafanadata
     external: true
 
 services:
@@ -138,6 +167,40 @@ services:
       - prometheusData:/data
     networks:
       - publicWeb
+      - prometheusNetwork
+
+  #
+  # Grafana Dashboard
+  #
+  Grafana:
+    image: grafana/grafana
+    configs:
+      - source: GrafanaConfig
+        target: /usr/share/grafana/conf/defaults.ini
+      - source: GrafanaDatasources
+        target: /etc/grafana/provisioning/datasources/datasource.yml
+      - source: GrafanaDashboardConfig
+        target: /etc/grafana/provisioning/dashboards/dashboard.yml
+      - source: GrafanaKNetCADashboard
+        target: /etc/grafana/provisioning/dashboards/knetca.json
+    volumes:
+      - grafanaData:/var/lib/grafana
+    networks:
+      - publicWeb
+      - prometheusNetwork
+
+  SSLExporter:
+    image: kristianfoss/programs-ssl-prometheus-exporter:main-scratch
+    command: ['--config.file=/etc/ssl-exporter/ssl-exporter.yml']
+    configs:
+      - source: SSLExporterConfig
+        target: /etc/ssl-exporter/ssl-exporter.yml
+    networks:
+      - prometheusNetwork
+
+  DomainExporter:
+    image: kristianfoss/programs-domain-prometheus-exporter:main-scratch
+    networks:
       - prometheusNetwork
 
   #

@@ -1,0 +1,19 @@
+modules:
+  https:
+    prober: https
+  https_insecure:
+    prober: https
+    tls_config:
+      insecure_skip_verify: true
+  https_proxy:
+    prober: https
+  tcp:
+    prober: tcp
+  tcp_servername:
+    prober: tcp
+  tcp_client_auth:
+    prober: tcp
+  tcp_smtp_starttls:
+    prober: tcp
+    tcp:
+      starttls: smtp

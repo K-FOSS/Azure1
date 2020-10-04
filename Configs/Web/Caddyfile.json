@@ -56,6 +56,44 @@
                   "close": true
                 }
               ]
+            },
+            {
+              "match": [
+                {
+                  "host": [
+                    "prometheus.kristianjones.dev"
+                  ]
+                }
+              ],
+              "handle": [
+                {
+                  "handler": "reverse_proxy",
+                  "upstreams": [
+                    {
+                      "dial": "Prometheus:9090"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "match": [
+                {
+                  "host": [
+                    "grafana.kristianjones.dev"
+                  ]
+                }
+              ],
+              "handle": [
+                {
+                  "handler": "reverse_proxy",
+                  "upstreams": [
+                    {
+                      "dial": "Grafana:8080"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
