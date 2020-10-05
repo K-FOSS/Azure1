@@ -36,3 +36,17 @@ scrape_configs:
         target_label: instance
       - target_label: __address__
         replacement: DomainExporter:9222
+
+  - job_name: federate-kjdev-int
+    scrape_interval: 15s
+
+    honor_labels: true
+    metrics_path: /federate
+
+    params:
+      'match[]':
+        - '{job="emmc1"}'
+
+    static_configs:
+      - targets:
+        - '66.165.222.180:9090'

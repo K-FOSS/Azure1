@@ -37,7 +37,7 @@ configs:
   # Prometheus Configuration File
   #
   PrometheusConfig:
-    name: PrometheusConfig-3
+    name: PrometheusConfig-5
     file: ./Configs/Prometheus/prometheus.yml
   
   GrafanaConfig:
@@ -60,7 +60,9 @@ configs:
     name: SSLExporterConfig-1
     file: ./Configs/Prometheus/SSLExporter/SSLExporter.yml
 
-
+  GrafanaMinecraftTemplateDashboard:
+    name: GrafanaMinecraftTemplateDashboard-12
+    file: ./Configs/Prometheus/Grafana/dashboards/Minecraft/MinecraftTemplate.json
 
 volumes:
   minio1Data:
@@ -183,6 +185,8 @@ services:
         target: /etc/grafana/provisioning/dashboards/dashboard.yml
       - source: GrafanaKNetCADashboard
         target: /etc/grafana/provisioning/dashboards/knetca.json
+      - source: GrafanaMinecraftTemplateDashboard
+        target: /etc/grafana/provisioning/dashboards/mc-template.json
     volumes:
       - grafanaData:/var/lib/grafana
     networks:
