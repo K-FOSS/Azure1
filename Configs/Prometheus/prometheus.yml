@@ -46,6 +46,7 @@ scrape_configs:
     params:
       'match[]':
         - '{job="emmc1"}'
+        - '{job="minio-job"}'
 
     static_configs:
       - targets:

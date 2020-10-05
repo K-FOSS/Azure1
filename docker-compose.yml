@@ -37,7 +37,7 @@ configs:
   # Prometheus Configuration File
   #
   PrometheusConfig:
-    name: PrometheusConfig-5
+    name: PrometheusConfig-6
     file: ./Configs/Prometheus/prometheus.yml
   
   GrafanaConfig:
