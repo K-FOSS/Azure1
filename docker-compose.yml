@@ -64,6 +64,10 @@ configs:
     name: GrafanaMinecraftTemplateDashboard-12
     file: ./Configs/Prometheus/Grafana/dashboards/Minecraft/MinecraftTemplate.json
 
+  GrafanaVMWareVMTemplateDashboard:
+    name: GrafanaVMWareVMTemplateDashboard-1
+    file: ./Configs/Prometheus/Grafana/dashboards/VMWare/VMs.json
+
 volumes:
   minio1Data:
     name: minio1Data
@@ -103,7 +107,12 @@ services:
       - source: WebConfig
         target: /etc/caddy/Caddyfile.json
     deploy:
+      mode: replicated
       replicas: 6
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
     env_file: ENVs/Web.env
     networks:
       - publicWeb
@@ -187,6 +196,15 @@ services:
         target: /etc/grafana/provisioning/dashboards/knetca.json
       - source: GrafanaMinecraftTemplateDashboard
         target: /etc/grafana/provisioning/dashboards/mc-template.json
+      - source: GrafanaVMWareVMTemplateDashboard
+        target: /etc/grafana/provisioning/dashboards/vmware-vm-template.json
+    deploy:
+      mode: replicated
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
     volumes:
       - grafanaData:/var/lib/grafana
     networks:
