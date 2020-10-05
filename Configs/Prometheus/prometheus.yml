@@ -47,6 +47,7 @@ scrape_configs:
       'match[]':
         - '{job="emmc1"}'
         - '{job="minio-job"}'
+        - '{job="vmware-job"}'
 
     static_configs:
       - targets:
