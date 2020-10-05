@@ -1,0 +1,30 @@
+conf:
+  refresh: 30m
+
+icmp:
+  interval: 15s
+  timeout: 5s
+  count: 10
+
+mtr:
+  interval: 60s
+  timeout: 500ms
+  max-hops: 30
+  count: 3
+
+tcp:
+  interval: 15s
+  timeout: 1s
+
+http_get:
+  interval: 10m
+  timeout: 5s
+
+targets:
+  - name: site1.fw1
+    host: 66.165.222.178
+    type: ICMP
+
+  - name: site1.fw2
+    host: 66.165.222.179
+    type: ICMP

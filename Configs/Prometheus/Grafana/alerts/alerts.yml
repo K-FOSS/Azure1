@@ -1,0 +1,10 @@
+notifiers:
+  - name: notification-channel-1
+    type: teams
+    uid: notifier1
+    # or
+    org_name: Main Org.
+    # See `Supported Settings` section for settings supported for each
+    # alert notification type.
+    settings:
+      url: https://outlook.office.com/webhook/7c392254-4619-48a8-b86b-1859ae521b23@d18e5a94-10e2-454a-b1a5-c0e578f4d5c6/IncomingWebhook/f2116930bee640c4ae50f9565fa7f6a5/a597e1a3-3266-4e23-a1c2-6b2d5d4f5f19

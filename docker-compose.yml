@@ -18,6 +18,11 @@ networks:
   #
   internalMinio:
 
+  #
+  # Internal Grafana
+  #
+  internalGrafana:
+
 configs:
   #
   # Public Reverse Proxy Caddyfile
@@ -37,11 +42,11 @@ configs:
   # Prometheus Configuration File
   #
   PrometheusConfig:
-    name: PrometheusConfig-7
+    name: PrometheusConfig-11
     file: ./Configs/Prometheus/prometheus.yml
   
   GrafanaConfig:
-    name: GrafanaConfig-5
+    name: GrafanaConfig-9
     file: ./Configs/Prometheus/Grafana/grafana.ini
 
   GrafanaDatasources:
@@ -53,7 +58,7 @@ configs:
     file: ./Configs/Prometheus/Grafana/dashboard.yml
 
   GrafanaKNetCADashboard:
-    name: GrafanaKNetCADashboard-1
+    name: GrafanaKNetCADashboard-2
     file: ./Configs/Prometheus/Grafana/dashboards/Domains/knetca.json
 
   SSLExporterConfig:
@@ -67,6 +72,14 @@ configs:
   GrafanaVMWareVMTemplateDashboard:
     name: GrafanaVMWareVMTemplateDashboard-1
     file: ./Configs/Prometheus/Grafana/dashboards/VMWare/VMs.json
+
+  GrafanaAlerts:
+    name: GrafanaAlerts-1
+    file: ./Configs/Prometheus/Grafana/alerts/alerts.yml
+
+  NetworkExporterConfig:
+    name: NetworkExporterConfig-2
+    file: ./Configs/Prometheus/NetworkExporter/network-exporter.yml
 
 volumes:
   minio1Data:
@@ -96,6 +109,13 @@ volumes:
     name: grafanadata
     external: true
 
+  #
+  # Grafana Database
+  #
+  grafanaDatabaseData:
+    name: grafanadatabasedata
+    external: true
+
 services:
   #
   # Reverse Proxy Handling all Web Traffic
@@ -108,7 +128,7 @@ services:
         target: /etc/caddy/Caddyfile.json
     deploy:
       mode: replicated
-      replicas: 6
+      replicas: 3
       update_config:
         parallelism: 1
         delay: 10s
@@ -190,6 +210,8 @@ services:
         target: /usr/share/grafana/conf/defaults.ini
       - source: GrafanaDatasources
         target: /etc/grafana/provisioning/datasources/datasource.yml
+      - source: GrafanaAlerts
+        target: /etc/grafana/provisioning/notifiers/alerts.yml
       - source: GrafanaDashboardConfig
         target: /etc/grafana/provisioning/dashboards/dashboard.yml
       - source: GrafanaKNetCADashboard
@@ -210,6 +232,21 @@ services:
     networks:
       - publicWeb
       - prometheusNetwork
+      - internalGrafana
+
+  #
+  # Grafana Database
+  #
+  GrafanaDatabase:
+    image: postgres:alpine
+    environment:
+      POSTGRES_USER: grafana
+      POSTGRES_PASSWORD: pgpass
+      POSTGRES_DB: grafana
+    volumes:
+      - grafanaDatabaseData:/var/lib/postgresql
+    networks:
+      - internalGrafana
 
   SSLExporter:
     image: kristianfoss/programs-ssl-prometheus-exporter:main-scratch
@@ -222,6 +259,22 @@ services:
 
   DomainExporter:
     image: kristianfoss/programs-domain-prometheus-exporter:main-scratch
+    networks:
+      - prometheusNetwork
+
+  NetworkExporter:
+    image: kristianfoss/programs-prometheus-network-exporter:node-exporter-main-scratch
+    privileged: true
+    command: ['--config.file=/etc/network-exporter/network-exporter.yml']
+    configs:
+      - source: NetworkExporterConfig
+        target: /etc/network-exporter/network-exporter.yml
+    sysctls:
+      net.ipv4.ping_group_range: '0 429496729'
+      net.ipv4.ip_unprivileged_port_start: 0
+    cap_add:
+      - NET_RAW
+      - SYS_PTRACE
     networks:
       - prometheusNetwork
 
@@ -243,7 +296,7 @@ services:
         mode: 0440
     deploy:
       mode: replicated
-      replicas: 6
+      replicas: 3
       update_config:
         parallelism: 1
         delay: 10s
@@ -257,7 +310,7 @@ services:
         mode: ingress
 
   Minio1:
-    image: kristianfoss/programs-minio:minio-build-main-scratch
+    image: kristianfoss/programs-minio:minio-build-stable-scratch
     command: ['server', 'http://Minio{1...4}/export']
     deploy:
       mode: replicated
@@ -273,7 +326,7 @@ services:
       - internalMinio
 
   Minio2:
-    image: kristianfoss/programs-minio:minio-build-main-scratch
+    image: kristianfoss/programs-minio:minio-build-stable-scratch
     command: ['server', 'http://Minio{1...4}/export']
     deploy:
       mode: replicated
@@ -289,7 +342,7 @@ services:
       - internalMinio
 
   Minio3:
-    image: kristianfoss/programs-minio:minio-build-main-scratch
+    image: kristianfoss/programs-minio:minio-build-stable-scratch
     command: ['server', 'http://Minio{1...4}/export']
     deploy:
       mode: replicated
@@ -305,7 +358,7 @@ services:
       - internalMinio
 
   Minio4:
-    image: kristianfoss/programs-minio:minio-build-main-scratch
+    image: kristianfoss/programs-minio:minio-build-stable-scratch
     command: ['server', 'http://Minio{1...4}/export']
     deploy:
       mode: replicated
